@@ -38,7 +38,10 @@ Every MCP client reads and writes one shared, versioned memory. If two clients w
 
 That last guarantee is structural, not a ranking decision. A replaced fact is excluded from retrieval *before* any scoring runs. So no query, and no similarity match, can bring it back.
 
-**Token cost is measured, not asserted.** Sending the full 200-memory evaluation corpus as context costs about 7,583 tokens. A single `memory_context` call, at its default 2,000-token budget, returns the 44 most useful memories instead — using only 1,797 tokens. That's a **4.2x reduction**. It was computed by actually running the real selection code against the real corpus, not written into this README by hand. Full method in [`docs/eval/tokens.md`](docs/eval/tokens.md).
+- Sending the full 200-memory evaluation corpus as context costs about 7,583 tokens.
+- A single `memory_context` call, at its default 2,000-token budget, returns the 44 most useful memories instead.
+- That request costs only 1,797 tokens — about **4.2x fewer tokens**.
+- Full method in [`docs/eval/tokens.md`](docs/eval/tokens.md).
 
 ## Architecture
 
