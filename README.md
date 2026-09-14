@@ -6,6 +6,9 @@
 ![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)
 ![PostgreSQL 16 + pgvector](https://img.shields.io/badge/postgres-16%20%2B%20pgvector-336791)
 ![369 tests](https://img.shields.io/badge/tests-369%20passing-brightgreen)
+![4.2x token reduction, measured](https://img.shields.io/badge/token%20budget-4.2x%20reduction%2C%20measured-orange)
+
+Claude Desktop, Cursor, and Claude Code each keep their own context today — a decision explained to one is invisible to the others, and every new session starts from zero. This is a single MCP server, backed by one PostgreSQL database, that gives all of them one shared, versioned memory: conflict-safe writes, immutable revision history, hybrid keyword + vector search, and a structural guarantee that a replaced decision can never resurface as a search result. No separate vector database, no Redis, no Kafka — just PostgreSQL, which a backend project already needs anyway.
 
 ---
 
@@ -30,6 +33,8 @@ Storing a fact is easy. Correctly *retiring* one — so it can never come back, 
 Every MCP client reads and writes one shared, versioned memory. Two clients writing at once are resolved safely, not silently overwritten. When a fact is replaced, the old version is marked as replaced in the same transaction as the new one — it stays fully readable in the audit history, but it can never come back as a search result again.
 
 That last guarantee is structural, not a ranking decision: a replaced fact is excluded from retrieval *before* any scoring runs, so no query and no similarity match can bring it back.
+
+**Token cost is measured, not asserted.** Sending the full 200-memory evaluation corpus as context costs about 7,583 tokens. A single `memory_context` call at its default 2,000-token budget returns the 44 most useful, non-redundant memories using 1,797 tokens — a **4.2x reduction, computed by running the actual selection code against the actual corpus**, not a number written into a README by hand. Full method in [`docs/eval/tokens.md`](docs/eval/tokens.md).
 
 ## Architecture
 

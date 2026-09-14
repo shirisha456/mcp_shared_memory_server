@@ -88,9 +88,36 @@ Two ways to narrow the gap later, in order of preference:
 
 Neither is worth doing before someone has a budget too tight to work with.
 
+## How much a budgeted brief actually saves
+
+A separate question from calibration: given a real corpus, how much smaller is a
+budgeted brief than sending everything? Measured by building the full 200-memory
+evaluation corpus (the 33 hand-written core memories plus the generated
+distractors used throughout `eval/`) as real `Candidate` objects and calling the
+production `select()` function on them directly — not a hand-written estimate.
+
+| | Memories | Tokens (`HeuristicEstimator`) |
+|---|---|---|
+| Full corpus, sent as-is | 200 | 7,583 |
+| `memory_context`, budget 500 | 11 | 431 |
+| `memory_context`, budget 2,000 (the tool's default) | 44 | 1,797 |
+| `memory_context`, budget 8,000 | 122 | 4,691 |
+
+At the default budget: **4.2x fewer tokens than the full corpus** (7,583 →
+1,797), selecting the 44 memories `select()` judges most useful rather than an
+arbitrary prefix.
+
+The 8,000-token row is the more interesting one. Utilisation drops to 59% —
+`select()` leaves 41% of the budget unspent rather than fill it with
+near-duplicate memories once the diversity check (`too_similar`) starts
+rejecting redundant candidates. Given room to spend more, it chooses not to,
+which is a different property than "fits within budget" and the more direct
+argument that this is selection, not truncation.
+
 ## Reproducing
 
-The comparison needs the optional embedding extra, for its tokeniser:
+**The estimator-accuracy comparison above** needs the optional embedding extra,
+for its tokeniser:
 
 ```bash
 pip install -e ".[local-embeddings]"
@@ -98,3 +125,11 @@ pip install -e ".[local-embeddings]"
 
 Then tokenise `eval/dataset/memories.yaml` with `TextEmbedding(...).model.tokenizer`
 and compare against `HeuristicEstimator().estimate(text) - PER_ITEM_OVERHEAD`.
+
+**The corpus-compression table** needs no extra dependency. Build the 200-memory
+corpus the same way `tests/eval/` does (`eval.dataset.distractor_contents` plus
+the core `eval/dataset/memories.yaml` records), wrap each as a
+`memhub.context.builder.Candidate`, and call
+`memhub.context.builder.select(candidates, budget=..., estimator=HeuristicEstimator())`
+at whatever budget you want to check. The `Selection.tokens_used`,
+`.selected`, and `.dropped` fields are exactly the numbers in the table above.
